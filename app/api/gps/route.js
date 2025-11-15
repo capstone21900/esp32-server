@@ -1,19 +1,18 @@
-// app/api/gps/route.js
+let latestGPS = { lat: 0, lon: 0 };
 
 export async function POST(req) {
   try {
     const body = await req.json();
     const { lat, lon } = body;
 
+    latestGPS = { lat, lon };
+
     console.log("📡 GPS Received:", lat, lon);
 
-    return new Response(
-      JSON.stringify({ message: "GPS OK", lat, lon }),
-      { status: 200 }
-    );
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+    });
   } catch (err) {
-    console.error("GPS API Error:", err);
     return new Response("Server Error", { status: 500 });
   }
 }
-git add app/api/esp/route.js
