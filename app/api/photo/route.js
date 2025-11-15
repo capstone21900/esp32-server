@@ -1,3 +1,4 @@
+// app/api/photo/route.js
 import OpenAI from "openai";
 
 export async function POST(req) {
@@ -38,7 +39,6 @@ export async function POST(req) {
 
     const audioBuffer = Buffer.from(await tts.arrayBuffer());
 
-    // 3) ESP32로 mp3 반환
     return new Response(audioBuffer, {
       status: 200,
       headers: {
@@ -46,7 +46,6 @@ export async function POST(req) {
         "Content-Length": audioBuffer.length,
       },
     });
-
   } catch (err) {
     console.error("Photo API Error:", err);
     return new Response("Server Error", { status: 500 });
