@@ -8,7 +8,7 @@ export async function POST(req) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // 1) GPT 이미지 분석
+    // 1) GPT 이미지 분석64 이미지가 있을 때만 이미지 추
     const userContent = [
       {
         type: "text",
@@ -16,7 +16,7 @@ export async function POST(req) {
       },
     ];
 
-    // base64 이미지가 있을 때만 이미지 추가
+    // base가
     if (imageBase64 && imageBase64.trim() !== "") {
       userContent.push({
         type: "image_url",
