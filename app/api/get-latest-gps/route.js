@@ -5,7 +5,12 @@ export async function GET() {
     const latestGPS = getLatestGPS();
 
     // lat, lon 값이 유효하지 않으면 오류 처리
-    if (latestGPS.lat === 0 || latestGPS.lon === 0) {
+    if (
+      typeof latestGPS.lat !== 'number' ||
+      typeof latestGPS.lon !== 'number' ||
+      isNaN(latestGPS.lat) ||
+      isNaN(latestGPS.lon)
+    ) {
       return new Response(
         JSON.stringify({ ok: false, error: "유효한 lat, lon 값이 필요합니다." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
