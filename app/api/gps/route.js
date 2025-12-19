@@ -4,6 +4,8 @@ import { setLatestGPS } from "../../../lib/gpsStore";
 export async function POST(req) {
   try {
     const body = await req.json();
+    console.log("📥 RAW body:", body);
+    console.log("📥 types:", { lat: typeof body.lat, lon: typeof body.lon });
     let { lat, lon } = body;
 
     // 문자열로 들어와도 숫자로 변환
