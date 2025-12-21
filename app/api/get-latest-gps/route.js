@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
-import { getLatestGps } from "@/lib/gpsStore";
+import { getLatestGPS } from "@/lib/gpsStore";
 
 export async function GET() {
-  return Response.json({ ok: true, gps: getLatestGps() });
+  return Response.json({ ok: true, gps: getLatestGPS() });
 }
