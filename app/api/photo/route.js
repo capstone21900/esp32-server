@@ -1,4 +1,5 @@
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 import OpenAI from "openai";
 
@@ -10,14 +11,17 @@ export async function POST(req) {
 
     const ct = (req.headers.get("content-type") || "").toLowerCase();
 
+    // ESP32가 보내는 헤더들
     const distanceCm = Number(req.headers.get("x-distance-cm") || 0);
     const buttonPressed = Number(req.headers.get("x-button-pressed") || 0);
-    const photoTaken = Number(req.headers.get("x-photo-taken") || 1);
+    const photoTaken = Number(req.headers.get("x-photo-taken") || 0);
 
+    // 버튼/촬영 플래그 체크 (ESP32가 1로 보내야 함)
     if (buttonPressed !== 1 || photoTaken !== 1) {
       return Response.json({ ok: false, reason: "not_ready" }, { status: 202 });
     }
 
+    // RAW JPEG 받기
     if (!ct.includes("image/jpeg") && !ct.includes("application/octet-stream")) {
       return new Response("Unsupported Content-Type", { status: 415 });
     }
@@ -27,6 +31,7 @@ export async function POST(req) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // 이미지+거리로 안내 문장 생성 (한국어 1~2문장)
     const analysis = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -50,9 +55,9 @@ export async function POST(req) {
     });
 
     const resultText =
-      analysis.choices?.[0]?.message?.content?.trim() || "앞에 장애물이 있습니다.";
+      analysis.choices?.[0]?.message?.content?.trim() || "앞에 장애물이 있습니다. 조심해서 이동하세요.";
 
-    // MP3 대신 PCM(디코딩 없이 I2S로 바로 출력 가능)
+    // TTS -> PCM (ESP32 I2S에 바로 밀어넣기 좋음)  :contentReference[oaicite:0]{index=0}
     const tts = await openai.audio.speech.create({
       model: "gpt-4o-mini-tts",
       voice: "alloy",
