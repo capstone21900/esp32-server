@@ -2,6 +2,13 @@ export const runtime = "nodejs";
 
 import OpenAI from "openai";
 
+export async function GET() {
+  return new Response(
+    "Use POST. Send JSON {distanceCm, imageBase64} or raw JPEG with headers.",
+    { status: 200 }
+  );
+}
+
 export async function POST(req) {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -10,20 +17,42 @@ export async function POST(req) {
 
     const ct = (req.headers.get("content-type") || "").toLowerCase();
 
-    const distanceCm = Number(req.headers.get("x-distance-cm") || 0);
-    const buttonPressed = Number(req.headers.get("x-button-pressed") || 0);
-    const photoTaken = Number(req.headers.get("x-photo-taken") || 1); // ✅ 한 번만!
+    let distanceCm = 0;
+    let imageBase64 = "";
+    let buttonPressed = 1;
+    let photoTaken = 1;
+
+    // ✅ 1) JSON(base64) 방식 (너 마스터 코드와 100% 호환)
+    if (ct.includes("application/json")) {
+      const body = await req.json();
+      distanceCm = Number(body.distanceCm ?? body.distance ?? 0);
+      imageBase64 = String(body.imageBase64 ?? "").trim();
+      buttonPressed = Number(body.buttonPressed ?? 1);
+      photoTaken = Number(body.photoTaken ?? 1);
+    }
+    // ✅ 2) Raw JPEG 방식 (나중에 필요하면 사용)
+    else if (ct.includes("image/jpeg") || ct.includes("application/octet-stream")) {
+      distanceCm = Number(req.headers.get("x-distance-cm") || 0);
+      buttonPressed = Number(req.headers.get("x-button-pressed") || 1);
+      photoTaken = Number(req.headers.get("x-photo-taken") || 1);
+
+      const jpegArrayBuffer = await req.arrayBuffer();
+      imageBase64 = Buffer.from(jpegArrayBuffer).toString("base64");
+    }
+    // ❌ 지원 안 함
+    else {
+      return new Response("Unsupported Content-Type", { status: 415 });
+    }
+
+    console.log("[PHOTO] ct=", ct, "dist=", distanceCm, "b=", buttonPressed, "p=", photoTaken, "b64len=", imageBase64.length);
 
     if (buttonPressed !== 1 || photoTaken !== 1) {
       return Response.json({ ok: false, reason: "not_ready" }, { status: 202 });
     }
 
-    if (!ct.includes("image/jpeg") && !ct.includes("application/octet-stream")) {
-      return new Response("Unsupported Content-Type", { status: 415 });
+    if (!imageBase64) {
+      return new Response("Missing imageBase64", { status: 400 });
     }
-
-    const jpegArrayBuffer = await req.arrayBuffer();
-    const imageBase64 = Buffer.from(jpegArrayBuffer).toString("base64");
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -52,7 +81,6 @@ export async function POST(req) {
     const resultText =
       analysis.choices?.[0]?.message?.content?.trim() || "앞에 장애물이 있습니다.";
 
-    // PCM (I2S로 바로 출력용)
     const tts = await openai.audio.speech.create({
       model: "gpt-4o-mini-tts",
       voice: "alloy",

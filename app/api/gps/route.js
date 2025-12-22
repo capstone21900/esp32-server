@@ -1,30 +1,18 @@
-export const runtime = "nodejs";
-
-import { setLatestGPS, getLatestGPS } from "../../../lib/gpsStore";
+let latestGPS = { lat: 0, lon: 0 };
 
 export async function POST(req) {
   try {
     const body = await req.json();
-    const lat = Number(body.lat);
-    const lon = Number(body.lon);
+    const { lat, lon } = body;
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      return new Response("lat/lon must be numbers", { status: 400 });
-    }
+    latestGPS = { lat, lon };
 
-    setLatestGPS({
-      lat,
-      lon,
-      speed: body.speed,
-      ts: body.ts,
+    console.log("📡 GPS Received:", lat, lon);
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
     });
-
-    return Response.json({ ok: true });
-  } catch (e) {
-    return new Response(`GPS Error: ${e?.message || "unknown"}`, { status: 500 });
+  } catch (err) {
+    return new Response("Server Error", { status: 500 });
   }
-}
-
-export async function GET() {
-  return Response.json({ ok: true, gps: getLatestGPS() });
 }
